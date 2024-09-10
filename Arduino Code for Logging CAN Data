@@ -1,0 +1,71 @@
+#include <SPI.h>
+#include <SD.h>
+#include <mcp_can.h>
+
+// Define CAN bus pins and variables
+#define CAN_CS 10
+MCP_CAN CAN(CAN_CS);  // Set CS to pin 10
+
+// Define SD card pins and variables
+#define SD_CS 4
+File myFile;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize SD card
+  if (!SD.begin(SD_CS)) {
+    Serial.println("SD Card initialization failed!");
+    return;
+  }
+  Serial.println("SD Card initialized.");
+  
+  // Open file on SD card
+  myFile = SD.open("CAN_LOG.csv", FILE_WRITE);
+  if (myFile) {
+    myFile.println("Timestamp, ID, DLC, Data");
+    myFile.close();
+  } else {
+    Serial.println("Error opening file for writing.");
+  }
+
+  // Initialize CAN bus
+  if (CAN.begin(CAN_500KBPS) == CAN_OK) {
+    Serial.println("CAN bus initialized.");
+  } else {
+    Serial.println("CAN bus initialization failed.");
+    while (1);
+  }
+}
+
+void loop() {
+  long unsigned int rxId;
+  unsigned char len = 0;
+  unsigned char rxBuf[8];
+
+  if (CAN_MSGAVAIL == CAN.checkReceive()) {
+    CAN.readMsgBuf(&rxId, &len, rxBuf);
+    logCanMessage(rxId, len, rxBuf);
+  }
+}
+
+void logCanMessage(long unsigned int id, unsigned char len, unsigned char *buf) {
+  // Open file for appending
+  myFile = SD.open("CAN_LOG.csv", FILE_WRITE);
+  if (myFile) {
+    myFile.print(millis());
+    myFile.print(", ");
+    myFile.print(id, HEX);
+    myFile.print(", ");
+    myFile.print(len);
+    myFile.print(", ");
+    for (int i = 0; i < len; i++) {
+      myFile.print(buf[i], HEX);
+      if (i < len - 1) myFile.print(" ");
+    }
+    myFile.println();
+    myFile.close();
+  } else {
+    Serial.println("Error opening file for writing.");
+  }
+}
