@@ -1,0 +1,38 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+void setup() {
+  // (Include previous setup code)
+  
+  // Initialize OLED display
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.display();
+  delay(2000);
+  display.clearDisplay();
+}
+
+void logCanMessage(long unsigned int id, unsigned char len, unsigned char *buf) {
+  // (Include previous logging code)
+  
+  // Display CAN message on OLED
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.print("ID: 0x");
+  display.println(id, HEX);
+  display.print("DLC: ");
+  display.println(len);
+  display.print("Data: ");
+  for (int i = 0; i < len; i++) {
+    display.print(buf[i], HEX);
+    display.print(" ");
+  }
+  display.display();
+}
